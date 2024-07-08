@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "psnv"
+version = "0.0.1"
+description = ""
+authors = ["kahosan <15116355657l@gmail.com>"]
+license = "MIT"
+readme = "README.md"
+package-mode = false
+
+[tool.poetry.dependencies]
+python = "^3.12"
+rich = "^13.7.1"
+pixivpy3 = "^3.7.5"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
