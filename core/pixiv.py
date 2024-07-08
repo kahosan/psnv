@@ -32,7 +32,6 @@ class Pixiv(AppPixivAPI):
             for follow in follows:
                 id = follow["user"]["id"]
                 follow_ids.append(id)
-                break
 
             if not r.get("next_url"):
                 break
@@ -42,6 +41,7 @@ class Pixiv(AppPixivAPI):
 
             time.sleep(1)
 
+        self.logger.info(f"Process {len(follow_ids)} follow")
         return follow_ids
 
     def collect_illusts(
