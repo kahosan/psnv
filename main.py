@@ -12,11 +12,12 @@ follow_config = config.get("follow")
 
 
 if follow_config.get("enabled"):
+    type_config = follow_config.get("type")
     root_path = follow_config.get("save_path")
+
     user_ids = p.get_follow_ids(p.user_id)
-
-    illusts: list[Illust] = []
-    for id in user_ids:
-        illusts.extend(p.collect_illusts(id, type="illust"))
-
-    p.process_illusts(illusts=illusts, root_path=root_path)
+    if type_config.get("illust"):
+        illusts: list[Illust] = []
+        for id in user_ids:
+            illusts.extend(p.collect_illusts(id, type="illust"))
+        p.process_illusts(illusts=illusts, root_path=root_path)
