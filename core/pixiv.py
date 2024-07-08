@@ -109,7 +109,7 @@ class Pixiv(AppPixivAPI):
                     )
                     count += 1
                 except Exception as e:
-                    self.logger.info(f"Failed to download {illust_id}: {e}")
+                    self.logger.error(f"Failed to download {illust_id}: {e}")
                     continue
 
         self.logger.error(f"Success add {count} illusts")
@@ -117,10 +117,16 @@ class Pixiv(AppPixivAPI):
     def download_illust(self, illust: Illust, root_path: str):
         import requests
 
-        for url in illust.get("image_urls"):
-            file_name = (
-                f"{utils.normalize_name(illust.get('title'))}_{url.split("/").pop()}"
-            )
+        id = illust.get("id")
+        title = utils.normalize_name(illust.get("title"))
+        urls = illust.get("image_urls")
+
+        if len(urls) > 1:
+            root_path = os.path.join(root_path, f"{title}_{str(id)}")
+            utils.check_folder_exists(root_path)
+
+        for url in urls:
+            file_name = f"{title}_{url.split("/").pop()}"
             path = os.path.join(root_path, file_name)
 
             with requests.get(
