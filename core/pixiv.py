@@ -112,7 +112,7 @@ class Pixiv(AppPixivAPI):
                     self.logger.error(f"Failed to download {illust_id}: {e}")
                     continue
 
-        self.logger.error(f"Success add {count} illusts")
+        self.logger.info(f"Success add {count} illusts")
 
     def download_illust(self, illust: Illust, root_path: str):
         import requests
