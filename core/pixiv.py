@@ -54,6 +54,9 @@ class Pixiv(AppPixivAPI):
 
         while True:
             illusts = r.get("illusts")
+            if illusts is None:
+                self.logger.error(f"Failed to collect illusts from user {user_id}")
+                continue
 
             for illust in illusts:
                 _illust: Illust = {

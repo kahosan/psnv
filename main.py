@@ -1,14 +1,14 @@
-from core.logger import Logger
 from core.config import load_config
 from core.pixiv import Illust, Pixiv
 
 
-logger = Logger(logger_name="main").get_logger()
 config = load_config()
-
-
 p = Pixiv(refresh_token=config.get("refresh_token"))
+
+
 follow_config = config.get("follow")
+favorite_config = config.get("favorite")
+ranking_config = config.get("ranking")
 
 
 if follow_config.get("enabled"):
@@ -21,3 +21,11 @@ if follow_config.get("enabled"):
         for id in user_ids:
             illusts.extend(p.collect_illusts(id, type="illust"))
         p.process_illusts(illusts=illusts, root_path=root_path)
+
+
+if favorite_config.get("enabled"):
+    pass
+
+
+if ranking_config.get("enabled"):
+    pass
