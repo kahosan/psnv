@@ -107,12 +107,15 @@ class Pixiv(AppPixivAPI):
                         "INSERT INTO illust (id, title, user_id) VALUES (?, ?, ?)",
                         (illust_id, illust_title, illust_user_id),
                     )
+                    db.commit()
                     count += 1
                 except Exception as e:
                     self.logger.error(f"Failed to download {illust_id}: {e}")
                     continue
 
-        self.logger.info(f"Success add {count} illusts")
+        self.logger.info(
+            f"Success add {count} illusts" if count > 0 else "No new illusts"
+        )
 
     def download_illust(self, illust: Illust, root_path: str):
         import requests
@@ -128,6 +131,8 @@ class Pixiv(AppPixivAPI):
         for url in urls:
             file_name = f"{title}_{url.split("/").pop()}"
             path = os.path.join(root_path, file_name)
+            if os.path.exists(path):
+                continue
 
             with requests.get(
                 url, headers={"Referer": "https://app-api.pixiv.net/"}, stream=True
