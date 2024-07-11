@@ -121,8 +121,6 @@ class Pixiv(AppPixivAPI):
         )
 
     def download_illust(self, illust: Illust, root_path: str):
-        import requests
-
         id = illust.get("id")
         title = utils.normalize_name(illust.get("title"))
         urls = illust.get("image_urls")
@@ -137,10 +135,4 @@ class Pixiv(AppPixivAPI):
             if os.path.exists(path):
                 continue
 
-            with requests.get(
-                url, headers={"Referer": "https://app-api.pixiv.net/"}, stream=True
-            ) as r:
-                r.raise_for_status()
-                with open(path, "wb") as file:
-                    for chunk in r.iter_content(chunk_size=8192):
-                        file.write(chunk)
+            utils.download_file(path, url)
