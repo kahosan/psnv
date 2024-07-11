@@ -1,6 +1,6 @@
 import os
 import time
-from typing import Literal, TypedDict
+from typing import TypedDict
 from pixivpy3 import AppPixivAPI
 
 from core.db import SQLiteDB
@@ -44,10 +44,8 @@ class Pixiv(AppPixivAPI):
         self.logger.info(f"Process {len(follow_ids)} follow")
         return follow_ids
 
-    def collect_illusts(
-        self, user_id: int | str, type: Literal["illust"] | Literal["manga"] = "illust"
-    ):
-        r = self.user_illusts(user_id, type=type)
+    def collect_illusts(self, user_id: int | str):
+        r = self.user_illusts(user_id, type="illust")
         collect: list[Illust] = []
 
         self.logger.info(f"Collecting illusts from user {user_id}")
