@@ -28,17 +28,28 @@ class Pixiv(AppPixivAPI):
         follow_ids: list[int] = []
 
         while True:
+            next_url = r.get("next_url")
             follows: list[dict] = r.get("user_previews")
+
+            if not follows:
+                self.logger.error("Failed to get follows, user_previews is none")
+                if next_url:
+                    qs = self.parse_qs(next_url)
+                    r = self.user_following(**qs)
+                    time.sleep(1)
+                    continue
+                else:
+                    break
+
             for follow in follows:
                 id = follow["user"]["id"]
                 follow_ids.append(id)
 
-            if not r.get("next_url"):
+            if not next_url:
                 break
 
-            qs = self.parse_qs(r.get("next_url"))
+            qs = self.parse_qs(next_url)
             r = self.user_following(**qs)
-
             time.sleep(1)
 
         self.logger.info(f"Process {len(follow_ids)} follow")
@@ -51,10 +62,19 @@ class Pixiv(AppPixivAPI):
         self.logger.info(f"Collecting illusts from user {user_id}")
 
         while True:
+            next_url = r.get("next_url")
             illusts = r.get("illusts")
             if illusts is None:
-                self.logger.error(f"Failed to collect illusts from user {user_id}")
-                continue
+                self.logger.error(
+                    f"Failed to collect illusts from user {user_id}, illusts is none"
+                )
+                if next_url:
+                    qs = self.parse_qs(next_url)
+                    r = self.user_illusts(**qs)
+                    time.sleep(1)
+                    continue
+                else:
+                    break
 
             for illust in illusts:
                 _illust: Illust = {
@@ -74,12 +94,11 @@ class Pixiv(AppPixivAPI):
 
                 collect.append(_illust)
 
-            if not r.get("next_url"):
+            if not next_url:
                 break
 
-            qs = self.parse_qs(r.get("next_url"))
+            qs = self.parse_qs(next_url)
             r = self.user_illusts(**qs)
-
             time.sleep(1)
 
         return collect
