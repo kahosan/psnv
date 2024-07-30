@@ -25,7 +25,6 @@ if follow_config.get("enabled"):
     if type_config.get("novel"):
         single_novels: list[Novel] = []
         novel_series: list[NovelSeries] = []
-        user_ids = [16534917]
         for id in user_ids:
             _novels = p.collect_novels(id)
             single_novels.extend(_novels[0])
