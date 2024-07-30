@@ -15,6 +15,15 @@ class Illust(TypedDict):
     user_id: int
 
 
+class Novel(TypedDict):
+    id: int
+    title: str
+    user_id: int
+    series_id: int | None
+    series_title: str | None
+    cover_url: str
+
+
 class Pixiv(AppPixivAPI):
     def __init__(self, refresh_token: str | None):
         super().__init__()
@@ -104,6 +113,8 @@ class Pixiv(AppPixivAPI):
         return collect
 
     def process_illusts(self, illusts: list[Illust], root_path: str):
+        root_path = os.path.join(root_path, "illusts")
+
         count = 0
         for illust in illusts:
             path = os.path.join(root_path, str(illust.get("user_id")))
@@ -127,7 +138,6 @@ class Pixiv(AppPixivAPI):
                         "INSERT INTO illust (id, title, user_id) VALUES (?, ?, ?)",
                         (illust_id, illust_title, illust_user_id),
                     )
-                    db.commit()
                     count += 1
                 except Exception as e:
                     self.logger.error(f"Failed to download {illust_id}: {e}")
@@ -153,3 +163,110 @@ class Pixiv(AppPixivAPI):
                 continue
 
             utils.download_file(path, url)
+
+    def collect_novels(self, user_id: int | str):
+        r = self.user_novels(user_id)
+        collect: list[Novel] = []
+
+        self.logger.info(f"Collecting novels from user {user_id}")
+
+        while True:
+            next_url = r.get("next_url")
+            novels = r.get("novels")
+            if novels is None:
+                self.logger.error(
+                    f"Failed to collect novels from user {user_id}, novels is none"
+                )
+                if next_url:
+                    qs = self.parse_qs(next_url)
+                    r = self.user_novels(**qs)
+                    time.sleep(1)
+                    continue
+                else:
+                    break
+
+            for novel in novels:
+                _novel: Novel = {
+                    "id": novel["id"],
+                    "title": novel["title"],
+                    "user_id": novel["user"]["id"],
+                    "series_id": novel.get("series").get("id"),
+                    "series_title": novel.get("series").get("title"),
+                    "cover_url": novel.get("image_urls").get("large"),
+                }
+                collect.append(_novel)
+
+            if not next_url:
+                break
+
+            qs = self.parse_qs(next_url)
+            r = self.user_novels(**qs)
+            time.sleep(1)
+
+        return collect
+
+    def process_novels(self, novels: list[Novel], root_path: str):
+        root_path = os.path.join(root_path, "novels")
+
+        count = 0
+        for novel in novels:
+            path = os.path.join(root_path, str(novel.get("user_id")))
+            utils.check_folder_exists(path)
+
+            novel_id = novel.get("id")
+
+            with SQLiteDB() as db:
+                c = db.cursor()
+                c.execute("SELECT id FROM novel WHERE id = ?", (novel_id,))
+                if c.fetchone():
+                    continue
+
+                novel_title = novel.get("title")
+                novel_user_id = novel.get("user_id")
+
+                try:
+                    self.logger.info(f"Processing novel {novel_id}")
+                    self.download_novel(novel=novel, root_path=path)
+                    c.execute(
+                        "INSERT INTO novel (id, title, user_id, series_id, series_title, cover_url) VALUES (?, ?, ?, ?, ?, ?)",
+                        (
+                            novel_id,
+                            novel_title,
+                            novel_user_id,
+                            novel.get("series_id"),
+                            novel.get("series_title"),
+                            novel.get("cover_url"),
+                        ),
+                    )
+                    count += 1
+                except Exception as e:
+                    self.logger.error(f"Failed to download {novel_id}: {e}")
+                    continue
+
+        self.logger.info(
+            f"Success add {count} novels" if count > 0 else "No new novels"
+        )
+
+    def download_novel(self, novel: Novel, root_path: str):
+        id = novel.get("id")
+        title = utils.normalize_name(novel.get("title"))
+        cover_url = novel.get("cover_url")
+
+        series_id = novel.get("series_id")
+        series_title = novel.get("series_title")
+
+        if series_id and series_title:
+            series_title = utils.normalize_name(series_title)
+            root_path = os.path.join(root_path, f"{series_title}_{str(series_id)}")
+            utils.check_folder_exists(root_path)
+
+            utils.download_file(
+                os.path.join(root_path, f"{series_title}.jpg"),
+                cover_url.replace("c/240x480_80", ""),
+            )
+
+        novel_text = self.novel_text(id).get("text")
+
+        with open(os.path.join(root_path, f"{title}.txt"), "w", encoding="utf-8") as f:
+            for line in novel_text.strip().split("\n"):
+                f.write(line.strip() + "\n")
