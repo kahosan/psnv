@@ -1,5 +1,5 @@
 from core.config import load_config
-from core.pixiv import Illust, Novel, Pixiv
+from core.pixiv import Illust, Novel, NovelSeries, Pixiv
 
 
 config = load_config()
@@ -23,10 +23,15 @@ if follow_config.get("enabled"):
         p.process_illusts(illusts=illusts, root_path=root_path)
 
     if type_config.get("novel"):
-        novels: list[Novel] = []
+        single_novels: list[Novel] = []
+        novel_series: list[NovelSeries] = []
+        user_ids = [16534917]
         for id in user_ids:
-            novels.extend(p.collect_novels(id))
-        p.process_novels(novels=novels, root_path=root_path)
+            _novels = p.collect_novels(id)
+            single_novels.extend(_novels[0])
+            novel_series.extend(_novels[1])
+        p.process_novels_series(series_list=novel_series, root_path=root_path)
+        p.process_novels(novels=single_novels, root_path=root_path)
 
 
 if favorite_config.get("enabled"):

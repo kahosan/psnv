@@ -21,8 +21,9 @@ class Novel(TypedDict):
     id: int
     title: str
     user_id: int
-    series_id: int | None
-    series_title: str | None
+
+
+class NovelSeries(Novel):
     cover_url: str
 
 
@@ -40,7 +41,7 @@ class Pixiv(AppPixivAPI):
         while qs:
             r = self.user_following(**qs)
             next_url = r.get("next_url")
-            follows: list[dict] = r.get("user_previews")
+            follows = r.get("user_previews")
 
             if not follows:
                 self.logger.error("Failed to get follows, user_previews is none")
@@ -49,7 +50,7 @@ class Pixiv(AppPixivAPI):
                 continue
 
             for follow in follows:
-                id = follow["user"]["id"]
+                id = follow.get("user").get("id")
                 follow_ids.append(id)
 
             qs = self.parse_qs(next_url)
@@ -79,19 +80,21 @@ class Pixiv(AppPixivAPI):
 
             for illust in illusts:
                 _illust: Illust = {
-                    "id": illust["id"],
-                    "title": illust["title"],
-                    "user_id": illust["user"]["id"],
+                    "id": illust.get("id"),
+                    "title": illust.get("title"),
+                    "user_id": illust.get("user").get("id"),
                     "image_urls": [],
                 }
 
                 if illust.get("meta_single_page"):
-                    _illust["image_urls"].append(
-                        illust["meta_single_page"]["original_image_url"]
+                    _illust.get("image_urls").append(
+                        illust.get("meta_single_page").get("original_image_url")
                     )
                 elif illust.get("meta_pages"):
-                    for page in illust["meta_pages"]:
-                        _illust["image_urls"].append(page["image_urls"]["original"])
+                    for page in illust.get("meta_pages"):
+                        _illust.get("image_urls").append(
+                            page.get("image_urls").get("original")
+                        )
 
                 collect.append(_illust)
 
@@ -153,7 +156,7 @@ class Pixiv(AppPixivAPI):
             utils.download_file(path, url)
 
     def collect_novels(self, user_id: int | str):
-        collect: list[Novel] = []
+        collect: tuple[list[Novel], list[NovelSeries]] = ([], [])
 
         self.logger.info(f"Collecting novels from user {user_id}")
 
@@ -171,27 +174,45 @@ class Pixiv(AppPixivAPI):
                 time.sleep(1)
                 continue
 
+            series_set = set()
             for novel in novels:
-                _novel: Novel = {
-                    "id": novel["id"],
-                    "title": novel["title"],
-                    "user_id": novel["user"]["id"],
-                    "series_id": novel.get("series").get("id"),
-                    "series_title": novel.get("series").get("title"),
-                    "cover_url": novel.get("image_urls").get("large"),
-                }
-                collect.append(_novel)
+                if novel.get("is_mypixiv_only"):
+                    continue
+
+                series_id = novel.get("series").get("id")
+                if series_id and (series_id not in series_set):
+                    series_set.add(series_id)
+                    collect[1].append(
+                        {
+                            "id": series_id,
+                            "title": novel.get("series").get("title"),
+                            "user_id": novel.get("user").get("id"),
+                            "cover_url": novel.get("image_urls").get("large"),
+                        }
+                    )
+                elif not series_id:
+                    collect[0].append(
+                        {
+                            "id": novel.get("id"),
+                            "title": novel.get("title"),
+                            "user_id": novel.get("user").get("id"),
+                        }
+                    )
 
             qs = self.parse_qs(next_url)
             time.sleep(1)
 
+        # 0 = novel, 1 = series
         return collect
 
     def process_novels(self, novels: list[Novel], root_path: str):
         root_path = os.path.join(root_path, "novels")
 
-        count = 0
         for novel in novels:
+            self.logger.info(
+                f"Processing novel {novel.get("id")}, {novel.get("title")}"
+            )
+
             path = os.path.join(root_path, str(novel.get("user_id")))
             utils.check_folder_exists(path)
 
@@ -204,40 +225,117 @@ class Pixiv(AppPixivAPI):
                     continue
 
                 novel_title = novel.get("title")
-                novel_user_id = novel.get("user_id")
+                user_id = novel.get("user_id")
 
                 try:
-                    self.logger.info(f"Processing novel {novel_id}")
                     self.download_novel(novel=novel, root_path=path)
                     c.execute(
-                        "INSERT INTO novel (id, title, user_id, series_id, series_title, cover_url) VALUES (?, ?, ?, ?, ?, ?)",
+                        "INSERT INTO novel (id, title, user_id) VALUES (?, ?, ?)",
                         (
                             novel_id,
                             novel_title,
-                            novel_user_id,
-                            novel.get("series_id"),
-                            novel.get("series_title"),
-                            novel.get("cover_url"),
+                            user_id,
                         ),
                     )
-                    count += 1
                 except Exception as e:
                     self.logger.error(f"Failed to download {novel_id}: {e}")
                     continue
 
-        self.logger.info(
-            f"Success add {count} novels" if count > 0 else "No new novels"
-        )
+    def process_novels_series(self, series_list: list[NovelSeries], root_path: str):
+        root_path = os.path.join(root_path, "novels")
 
-    def download_novel(self, novel: Novel, root_path: str):
+        for series in series_list:
+            path = os.path.join(root_path, str(series.get("user_id")))
+            utils.check_folder_exists(path)
+
+            qs: Qs = {"series_id": series.get("id")}
+            no = 0
+            self.logger.info(
+                f"Processing novel series {series.get("id")}, {series.get('title')}"
+            )
+            while qs:
+                r = self.novel_series(**qs)
+                next_url = r.get("next_url")
+                novels = r.get("novels")
+
+                if novels is None:
+                    self.logger.error(
+                        f"Failed to process series {series}, novels is none"
+                    )
+                    qs = self.parse_qs(next_url)
+                    time.sleep(1)
+                    continue
+
+                for novel in novels:
+                    if novel.get("is_mypixiv_only"):
+                        continue
+
+                    novel_id = novel.get("id")
+                    novel_title = novel.get("title")
+
+                    no += 1
+
+                    _novel: Novel = {
+                        "id": novel_id,
+                        "title": novel_title,
+                        "user_id": series.get("user_id"),
+                    }
+
+                    with SQLiteDB() as db:
+                        c = db.cursor()
+                        c.execute("SELECT id FROM novel WHERE id = ?", (novel_id,))
+                        if c.fetchone():
+                            continue
+
+                        try:
+                            self.download_novel(
+                                novel=_novel,
+                                root_path=path,
+                                novel_no=no,
+                                series=series,
+                            )
+                            c.execute(
+                                "INSERT INTO novel (id, title, user_id, series_id, series_title, cover_url) VALUES (?, ?, ?, ?, ?, ?)",
+                                (
+                                    novel_id,
+                                    novel_title,
+                                    series.get("user_id"),
+                                    series.get("id"),
+                                    series.get("title"),
+                                    series.get("cover_url"),
+                                ),
+                            )
+                        except Exception as e:
+                            self.logger.error(
+                                f"Failed to download {series.get("id")}, novel no {no}: {e}"
+                            )
+                            continue
+
+                qs = self.parse_qs(next_url)
+                time.sleep(1)
+
+    def download_novel(
+        self,
+        novel: Novel,
+        root_path: str,
+        novel_no: int | None = None,
+        series: NovelSeries | None = None,
+    ):
         id = novel.get("id")
         title = utils.normalize_name(novel.get("title"))
-        cover_url = novel.get("cover_url")
 
-        series_id = novel.get("series_id")
-        series_title = novel.get("series_title")
+        cover_url, series_id, series_title = (
+            (None, None, None)
+            if not series
+            else (
+                series.get("cover_url"),
+                series.get("id"),
+                series.get("title"),
+            )
+        )
 
-        if series_id and series_title:
+        if series_id and series_title and novel_no and cover_url:
+            title = f"{novel_no}. {title}"
             series_title = utils.normalize_name(series_title)
             root_path = os.path.join(root_path, f"{series_title}_{str(series_id)}")
             utils.check_folder_exists(root_path)
