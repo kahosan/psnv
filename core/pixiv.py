@@ -1,11 +1,13 @@
 import os
 import time
-from typing import TypedDict
+from typing import Any, TypedDict
 from pixivpy3 import AppPixivAPI
 
 from core.db import SQLiteDB
 from core.logger import Logger
 from lib import utils
+
+type Qs = dict[str, Any] | None
 
 
 class Illust(TypedDict):
@@ -32,58 +34,48 @@ class Pixiv(AppPixivAPI):
         self.logger = Logger(logger_name="pixiv").get_logger()
 
     def get_follow_ids(self, user_id: int | str):
-        r = self.user_following(user_id)
-
         follow_ids: list[int] = []
 
-        while True:
+        qs: Qs = {"user_id": user_id}
+        while qs:
+            r = self.user_following(**qs)
             next_url = r.get("next_url")
             follows: list[dict] = r.get("user_previews")
 
             if not follows:
                 self.logger.error("Failed to get follows, user_previews is none")
-                if next_url:
-                    qs = self.parse_qs(next_url)
-                    r = self.user_following(**qs)
-                    time.sleep(1)
-                    continue
-                else:
-                    break
+                qs = self.parse_qs(next_url)
+                time.sleep(1)
+                continue
 
             for follow in follows:
                 id = follow["user"]["id"]
                 follow_ids.append(id)
 
-            if not next_url:
-                break
-
             qs = self.parse_qs(next_url)
-            r = self.user_following(**qs)
             time.sleep(1)
 
         self.logger.info(f"Process {len(follow_ids)} follow")
         return follow_ids
 
     def collect_illusts(self, user_id: int | str):
-        r = self.user_illusts(user_id, type="illust")
         collect: list[Illust] = []
 
         self.logger.info(f"Collecting illusts from user {user_id}")
 
-        while True:
+        qs: Qs = {"user_id": user_id, "type": "illust"}
+        while qs:
+            r = self.user_illusts(**qs)
             next_url = r.get("next_url")
             illusts = r.get("illusts")
+
             if illusts is None:
                 self.logger.error(
                     f"Failed to collect illusts from user {user_id}, illusts is none"
                 )
-                if next_url:
-                    qs = self.parse_qs(next_url)
-                    r = self.user_illusts(**qs)
-                    time.sleep(1)
-                    continue
-                else:
-                    break
+                qs = self.parse_qs(next_url)
+                time.sleep(1)
+                continue
 
             for illust in illusts:
                 _illust: Illust = {
@@ -103,11 +95,7 @@ class Pixiv(AppPixivAPI):
 
                 collect.append(_illust)
 
-            if not next_url:
-                break
-
             qs = self.parse_qs(next_url)
-            r = self.user_illusts(**qs)
             time.sleep(1)
 
         return collect
@@ -165,25 +153,23 @@ class Pixiv(AppPixivAPI):
             utils.download_file(path, url)
 
     def collect_novels(self, user_id: int | str):
-        r = self.user_novels(user_id)
         collect: list[Novel] = []
 
         self.logger.info(f"Collecting novels from user {user_id}")
 
-        while True:
+        qs: Qs = {"user_id": user_id}
+        while qs:
+            r = self.user_novels(**qs)
             next_url = r.get("next_url")
             novels = r.get("novels")
+
             if novels is None:
                 self.logger.error(
                     f"Failed to collect novels from user {user_id}, novels is none"
                 )
-                if next_url:
-                    qs = self.parse_qs(next_url)
-                    r = self.user_novels(**qs)
-                    time.sleep(1)
-                    continue
-                else:
-                    break
+                qs = self.parse_qs(next_url)
+                time.sleep(1)
+                continue
 
             for novel in novels:
                 _novel: Novel = {
@@ -196,11 +182,7 @@ class Pixiv(AppPixivAPI):
                 }
                 collect.append(_novel)
 
-            if not next_url:
-                break
-
             qs = self.parse_qs(next_url)
-            r = self.user_novels(**qs)
             time.sleep(1)
 
         return collect
