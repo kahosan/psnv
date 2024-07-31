@@ -160,6 +160,7 @@ class Pixiv(AppPixivAPI):
 
         self.logger.info(f"Collecting novels from user {user_id}")
 
+        series_set = set()
         qs: Qs = {"user_id": user_id}
         while qs:
             r = self.user_novels(**qs)
@@ -174,7 +175,6 @@ class Pixiv(AppPixivAPI):
                 time.sleep(1)
                 continue
 
-            series_set = set()
             for novel in novels:
                 if novel.get("is_mypixiv_only"):
                     continue
