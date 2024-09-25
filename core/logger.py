@@ -55,7 +55,9 @@ class Logger:
         # If stream is not specified, sys.stderr is used.
         # If you need sys.stdout, pass it to StreamHandler constructor()
         # stream_handler = StreamHandler()
-        shell_handler = RichHandler(rich_tracebacks=True)
+        shell_handler = RichHandler(
+            rich_tracebacks=True, show_level=False, show_time=False, show_path=False
+        )
 
         file_handler = FileHandler(
             filename=os.path.join(self.log_dir, f"{self.log_filename}.log"),
@@ -70,9 +72,13 @@ class Logger:
 
         # LOG FORMAT
         # fmt_shell = "%(name)s %(message)s"
-        fmt_shell = "%(message)s"
-        fmt_file = "%(asctime)s %(levelname)s | %(name)s | %(filename)s:%(lineno)d | %(message)s"
-        datefmt = "%Y-%m-%d,%H:%M:%S"
+        fmt_shell = (
+            "[%(asctime)s] %(levelname)s | %(filename)s:%(lineno)d:   %(message)s"
+        )
+        fmt_file = (
+            "[%(asctime)s] %(levelname)s | %(filename)s:%(lineno)d:   %(message)s"
+        )
+        datefmt = "%Y-%m-%d %H:%M:%S"
 
         # LOG FORMATTER
         # 2023-02-02,13:07:55 INFO     [logger2] Logging set up.             logger2.py:30
