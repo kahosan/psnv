@@ -347,6 +347,10 @@ class Pixiv(AppPixivAPI):
 
         novel_text = self.novel_text(id).get("text")
 
+        max_filename_length = 255
+        if len(title) > max_filename_length:
+            title = title[:max_filename_length]
+
         with open(os.path.join(root_path, f"{title}.txt"), "w", encoding="utf-8") as f:
             for line in novel_text.strip().split("\n"):
                 f.write(line.strip() + "\n")
