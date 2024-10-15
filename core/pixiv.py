@@ -250,18 +250,6 @@ class Pixiv(AppPixivAPI):
             qs: Qs = {"series_id": series.get("id")}
             no = 0
 
-            with SQLiteDB() as db:
-                c = db.cursor()
-                c.execute(
-                    "SELECT id FROM novel WHERE series_id = ?", (series.get("id"),)
-                )
-                if c.fetchone():
-                    continue
-
-                self.logger.info(
-                    f"Processing novel series {series.get("id")}, {series.get('title')}"
-                )
-
             while qs:
                 r = self.novel_series(**qs)
                 next_url = r.get("next_url")
