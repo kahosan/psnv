@@ -209,10 +209,6 @@ class Pixiv(AppPixivAPI):
         root_path = os.path.join(root_path, "novels")
 
         for novel in novels:
-            self.logger.info(
-                f"Processing novel {novel.get("id")}, {novel.get("title")}"
-            )
-
             path = os.path.join(root_path, str(novel.get("user_id")))
             utils.check_folder_exists(path)
 
@@ -224,6 +220,9 @@ class Pixiv(AppPixivAPI):
                 if c.fetchone():
                     continue
 
+                self.logger.info(
+                    f"Processing novel {novel.get("id")}, {novel.get("title")}"
+                )
                 novel_title = novel.get("title")
                 user_id = novel.get("user_id")
 
@@ -250,9 +249,19 @@ class Pixiv(AppPixivAPI):
 
             qs: Qs = {"series_id": series.get("id")}
             no = 0
-            self.logger.info(
-                f"Processing novel series {series.get("id")}, {series.get('title')}"
-            )
+
+            with SQLiteDB() as db:
+                c = db.cursor()
+                c.execute(
+                    "SELECT id FROM novel WHERE series_id = ?", (series.get("id"),)
+                )
+                if c.fetchone():
+                    continue
+
+                self.logger.info(
+                    f"Processing novel series {series.get("id")}, {series.get('title')}"
+                )
+
             while qs:
                 r = self.novel_series(**qs)
                 next_url = r.get("next_url")
@@ -287,6 +296,9 @@ class Pixiv(AppPixivAPI):
                         if c.fetchone():
                             continue
 
+                        self.logger.info(
+                            f"Processing series {series.get("id")}, novel: {novel_title}"
+                        )
                         try:
                             self.download_novel(
                                 novel=_novel,
