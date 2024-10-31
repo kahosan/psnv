@@ -14,21 +14,21 @@ ranking_config = config.get("ranking")
 if follow_config.get("enabled"):
     type_config = follow_config.get("type")
     root_path = follow_config.get("save_path")
-    user_ids = p.get_follow_ids(p.user_id)
+    user_follows = p.get_user_follows(p.user_id)
 
     if type_config.get("illust"):
         illusts: list[UserIllust] = []
-        for id in user_ids:
-            user_illusts = p.collect_illusts(id)
-            if user_illusts:
-                illusts.append(user_illusts)
+        for follow in user_follows:
+            illusts.append(
+                p.collect_illusts(follow.get("follow_id"), follow.get("follow_name"))
+            )
         p.process_illusts(UserIllusts=illusts, root_path=root_path)
 
     if type_config.get("novel"):
         single_novels: list[Novel] = []
         novel_series: list[NovelSeries] = []
-        for id in user_ids:
-            _novels = p.collect_novels(id)
+        for follow in user_follows:
+            _novels = p.collect_novels(follow.get("follow_id"))
             single_novels.extend(_novels[0])
             novel_series.extend(_novels[1])
         p.process_novels_series(series_list=novel_series, root_path=root_path)

@@ -33,6 +33,11 @@ class NovelSeries(Novel):
     cover_url: str
 
 
+class UserFollow(TypedDict):
+    follow_id: int
+    follow_name: str
+
+
 class Pixiv(AppPixivAPI):
     def __init__(self, refresh_token: str | None):
         super().__init__()
@@ -40,8 +45,8 @@ class Pixiv(AppPixivAPI):
 
         self.logger = Logger(logger_name="pixiv").get_logger()
 
-    def get_follow_ids(self, user_id: int | str):
-        follow_ids: list[int] = []
+    def get_user_follows(self, user_id: int | str):
+        user_follow_collect: list[UserFollow] = []
 
         qs: Qs = {"user_id": user_id}
         while qs:
@@ -57,22 +62,17 @@ class Pixiv(AppPixivAPI):
 
             for follow in follows:
                 id = follow.get("user").get("id")
-                follow_ids.append(id)
+                name = follow.get("user").get("name")
+                user_follow_collect.append({"follow_id": id, "follow_name": name})
 
             qs = self.parse_qs(next_url)
             time.sleep(1)
 
-        self.logger.info(f"Process {len(follow_ids)} follow")
-        return follow_ids
+        self.logger.info(f"Process {len(user_follow_collect)} follow")
+        return user_follow_collect
 
-    def collect_illusts(self, user_id: int | str) -> UserIllust | None:
+    def collect_illusts(self, user_id: int | str, user_name: str) -> UserIllust:
         illust_collect: list[Illust] = []
-
-        try:
-            user_name: str = self.user_detail(user_id).get("user").get("name")
-        except Exception as e:
-            self.logger.error(f"Failed to get user detail {user_id}: {e}")
-            return
 
         self.logger.info(f"Collecting illusts from user {user_name}_{user_id}")
 
