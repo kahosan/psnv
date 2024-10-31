@@ -46,6 +46,8 @@ def sync_user_name_folder(
     except Exception as e:
         logger.error(f"Error while renaming folder: {e}")
 
+    logger.info(f"Renamed folder: {old_folder_name} -> {new_folder_name}")
+
 
 def download_file(path: str, url: str):
     import requests
