@@ -125,9 +125,15 @@ class Pixiv(AppPixivAPI):
         for userIllust in UserIllusts:
             path = os.path.join(
                 root_path,
-                f"{userIllust.get('user_name')}_{str(userIllust.get("user_id"))}",
+                f"{utils.normalize_name(userIllust.get('user_name'))}_{str(userIllust.get("user_id"))}",
             )
             utils.check_folder_exists(path)
+            utils.sync_user_name_folder(
+                userIllust.get("user_name"),
+                userIllust.get("user_id"),
+                root_path,
+                self.logger,
+            )
 
             self.logger.info(
                 f"Start Processing illusts from {userIllust.get('user_name')}"
