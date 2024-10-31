@@ -23,9 +23,10 @@ def check_folder_exists(path: str):
 
 def check_user_name_is_change(current_name: str, user_id: int, root_path: str):
     for folder in os.listdir(root_path):
-        (name, id) = folder.split("_")
-        if id == user_id and name != current_name:
-            return (True, name)
+        if "_" in folder:
+            name, id = folder.split("_")
+            if id == user_id and name != current_name:
+                return (True, name)
     return (False, None)
 
 
