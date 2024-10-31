@@ -18,7 +18,7 @@ if follow_config.get("enabled"):
 
     if type_config.get("illust"):
         illusts: list[UserIllust] = []
-        for id in user_ids[:2]:
+        for id in user_ids:
             illusts.extend(p.collect_illusts(id))
         p.process_illusts(UserIllusts=illusts, root_path=root_path)
 
