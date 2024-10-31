@@ -65,11 +65,14 @@ class Pixiv(AppPixivAPI):
         self.logger.info(f"Process {len(follow_ids)} follow")
         return follow_ids
 
-    def collect_illusts(self, user_id: int | str):
-        collect: list[UserIllust] = []
+    def collect_illusts(self, user_id: int | str) -> UserIllust | None:
         illust_collect: list[Illust] = []
 
-        user_name: str = self.user_detail(user_id).get("user").get("name")
+        try:
+            user_name: str = self.user_detail(user_id).get("user").get("name")
+        except Exception as e:
+            self.logger.error(f"Failed to get user detail {user_id}: {e}")
+            return
 
         self.logger.info(f"Collecting illusts from user {user_name}_{user_id}")
 
@@ -110,14 +113,11 @@ class Pixiv(AppPixivAPI):
             qs = self.parse_qs(next_url)
             time.sleep(1)
 
-        collect.append(
-            {
-                "user_id": int(user_id),
-                "user_name": user_name,
-                "illusts": illust_collect,
-            }
-        )
-        return collect
+        return {
+            "user_id": int(user_id),
+            "user_name": user_name,
+            "illusts": illust_collect,
+        }
 
     def process_illusts(self, UserIllusts: list[UserIllust], root_path: str):
         root_path = os.path.join(root_path, "illusts")

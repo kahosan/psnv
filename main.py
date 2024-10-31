@@ -19,7 +19,9 @@ if follow_config.get("enabled"):
     if type_config.get("illust"):
         illusts: list[UserIllust] = []
         for id in user_ids:
-            illusts.extend(p.collect_illusts(id))
+            user_illusts = p.collect_illusts(id)
+            if user_illusts:
+                illusts.append(user_illusts)
         p.process_illusts(UserIllusts=illusts, root_path=root_path)
 
     if type_config.get("novel"):
