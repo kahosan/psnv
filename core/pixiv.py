@@ -17,6 +17,12 @@ class Illust(TypedDict):
     user_id: int
 
 
+class UserIllust(TypedDict):
+    user_id: int
+    user_name: str
+    illusts: list[Illust]
+
+
 class Novel(TypedDict):
     id: int
     title: str
@@ -60,9 +66,12 @@ class Pixiv(AppPixivAPI):
         return follow_ids
 
     def collect_illusts(self, user_id: int | str):
-        collect: list[Illust] = []
+        collect: list[UserIllust] = []
+        illust_collect: list[Illust] = []
 
-        self.logger.info(f"Collecting illusts from user {user_id}")
+        user_name: str = self.user_detail(user_id).get("user").get("name")
+
+        self.logger.info(f"Collecting illusts from user {user_name}_{user_id}")
 
         qs: Qs = {"user_id": user_id, "type": "illust"}
         while qs:
@@ -96,47 +105,66 @@ class Pixiv(AppPixivAPI):
                             page.get("image_urls").get("original")
                         )
 
-                collect.append(_illust)
+                illust_collect.append(_illust)
 
             qs = self.parse_qs(next_url)
             time.sleep(1)
 
+        collect.append(
+            {
+                "user_id": int(user_id),
+                "user_name": user_name,
+                "illusts": illust_collect,
+            }
+        )
         return collect
 
-    def process_illusts(self, illusts: list[Illust], root_path: str):
+    def process_illusts(self, UserIllusts: list[UserIllust], root_path: str):
         root_path = os.path.join(root_path, "illusts")
 
-        count = 0
-        for illust in illusts:
-            path = os.path.join(root_path, str(illust.get("user_id")))
+        for userIllust in UserIllusts:
+            path = os.path.join(
+                root_path,
+                f"{userIllust.get('user_name')}_{str(userIllust.get("user_id"))}",
+            )
             utils.check_folder_exists(path)
 
-            illust_id = illust.get("id")
+            self.logger.info(
+                f"Start Processing illusts from {userIllust.get('user_name')}"
+            )
 
-            with SQLiteDB() as db:
-                c = db.cursor()
-                c.execute("SELECT id FROM illust WHERE id = ?", (illust_id,))
-                if c.fetchone():
-                    continue
+            count = 0
+            for illust in userIllust.get("illusts"):
+                illust_id = illust.get("id")
 
-                illust_title = illust.get("title")
-                illust_user_id = illust.get("user_id")
+                with SQLiteDB() as db:
+                    c = db.cursor()
+                    c.execute("SELECT id FROM illust WHERE id = ?", (illust_id,))
+                    if c.fetchone():
+                        continue
 
-                try:
-                    self.logger.info(f"Processing illust {illust_id}")
-                    self.download_illust(illust=illust, root_path=path)
-                    c.execute(
-                        "INSERT INTO illust (id, title, user_id) VALUES (?, ?, ?)",
-                        (illust_id, illust_title, illust_user_id),
-                    )
-                    count += 1
-                except Exception as e:
-                    self.logger.error(f"Failed to download {illust_id}: {e}")
-                    continue
+                    illust_title = illust.get("title")
+                    illust_user_id = illust.get("user_id")
 
-        self.logger.info(
-            f"Success add {count} illusts" if count > 0 else "No new illusts"
-        )
+                    try:
+                        self.logger.info(
+                            f"Processing illust {illust_id}_{illust_title}"
+                        )
+                        self.download_illust(illust=illust, root_path=path)
+                        c.execute(
+                            "INSERT INTO illust (id, title, user_id) VALUES (?, ?, ?)",
+                            (illust_id, illust_title, illust_user_id),
+                        )
+                        count += 1
+                    except Exception as e:
+                        self.logger.error(f"Failed to download {illust_id}: {e}")
+                        continue
+
+            self.logger.info(
+                f"Success add {count} illust from {userIllust.get("user_name")}"
+                if count > 0
+                else f"No new illust from {userIllust.get("user_name")}"
+            )
 
     def download_illust(self, illust: Illust, root_path: str):
         id = illust.get("id")
