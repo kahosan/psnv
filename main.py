@@ -1,3 +1,4 @@
+from pathlib import Path
 from core.config import load_config
 from core.pixiv import UserIllust, Novel, NovelSeries, Pixiv
 
@@ -13,12 +14,12 @@ ranking_config = config.get("ranking")
 
 if follow_config.get("enabled"):
     type_config = follow_config.get("type")
-    root_path = follow_config.get("save_path")
+    root_path = Path(follow_config.get("save_path"))
     user_follows = p.get_user_follows(p.user_id)
 
     if type_config.get("illust"):
         illusts: list[UserIllust] = []
-        for follow in user_follows:
+        for follow in user_follows[:1]:
             illusts.append(
                 p.collect_illusts(follow.get("follow_id"), follow.get("follow_name"))
             )

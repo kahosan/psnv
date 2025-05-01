@@ -1,6 +1,7 @@
-import os
 import time
+from pathlib import Path
 from typing import Any, TypedDict
+
 from pixivpy3 import AppPixivAPI
 
 from core.db import SQLiteDB
@@ -119,13 +120,12 @@ class Pixiv(AppPixivAPI):
             "illusts": illust_collect,
         }
 
-    def process_illusts(self, UserIllusts: list[UserIllust], root_path: str):
-        root_path = os.path.join(root_path, "illusts")
+    def process_illusts(self, UserIllusts: list[UserIllust], root_path: Path):
+        root_path = root_path.joinpath("illusts")
 
         for userIllust in UserIllusts:
-            path = os.path.join(
-                root_path,
-                f"{utils.normalize_name(userIllust.get('user_name'))}_{str(userIllust.get("user_id"))}",
+            path = root_path.joinpath(
+                f"{utils.normalize_name(userIllust.get('user_name'))}_{str(userIllust.get('user_id'))}"
             )
             utils.check_folder_exists(path)
             utils.sync_user_name_folder(
@@ -167,27 +167,27 @@ class Pixiv(AppPixivAPI):
                         continue
 
             self.logger.info(
-                f"Success add {count} illust from {userIllust.get("user_name")}"
+                f"Success add {count} illust from {userIllust.get('user_name')}"
                 if count > 0
-                else f"No new illust from {userIllust.get("user_name")}"
+                else f"No new illust from {userIllust.get('user_name')}"
             )
 
-    def download_illust(self, illust: Illust, root_path: str):
+    def download_illust(self, illust: Illust, root_path: Path):
         id = illust.get("id")
         title = utils.normalize_name(illust.get("title"))
         urls = illust.get("image_urls")
 
         if len(urls) > 1:
-            root_path = os.path.join(root_path, f"{title}_{str(id)}")
+            root_path = root_path.joinpath(f"{title}_{str(id)}")
             utils.check_folder_exists(root_path)
 
         for url in urls:
-            file_name = f"{title}_{url.split("/").pop()}"
-            path = os.path.join(root_path, file_name)
-            if os.path.exists(path):
+            file_name = f"{title}_{url.split('/').pop()}"
+            file_path = root_path.joinpath(file_name)
+            if file_path.exists():
                 continue
 
-            utils.download_file(path, url)
+            utils.download_file(file_path, url)
 
     def collect_novels(self, user_id: int | str):
         collect: tuple[list[Novel], list[NovelSeries]] = ([], [])
@@ -239,11 +239,11 @@ class Pixiv(AppPixivAPI):
         # 0 = novel, 1 = series
         return collect
 
-    def process_novels(self, novels: list[Novel], root_path: str):
-        root_path = os.path.join(root_path, "novels")
+    def process_novels(self, novels: list[Novel], root_path: Path):
+        root_path = root_path.joinpath("novels")
 
         for novel in novels:
-            path = os.path.join(root_path, str(novel.get("user_id")))
+            path = root_path.joinpath(str(novel.get("user_id")))
             utils.check_folder_exists(path)
 
             novel_id = novel.get("id")
@@ -255,7 +255,7 @@ class Pixiv(AppPixivAPI):
                     continue
 
                 self.logger.info(
-                    f"Processing novel {novel.get("id")}, {novel.get("title")}"
+                    f"Processing novel {novel.get('id')}, {novel.get('title')}"
                 )
                 novel_title = novel.get("title")
                 user_id = novel.get("user_id")
@@ -274,11 +274,11 @@ class Pixiv(AppPixivAPI):
                     self.logger.error(f"Failed to download {novel_id}: {e}")
                     continue
 
-    def process_novels_series(self, series_list: list[NovelSeries], root_path: str):
-        root_path = os.path.join(root_path, "novels")
+    def process_novels_series(self, series_list: list[NovelSeries], root_path: Path):
+        root_path = root_path.joinpath("novels")
 
         for series in series_list:
-            path = os.path.join(root_path, str(series.get("user_id")))
+            path = Path(root_path).joinpath(str(series.get("user_id")))
             utils.check_folder_exists(path)
 
             qs: Qs = {"series_id": series.get("id")}
@@ -319,7 +319,7 @@ class Pixiv(AppPixivAPI):
                             continue
 
                         self.logger.info(
-                            f"Processing series {series.get("id")}, novel: {novel_title}"
+                            f"Processing series {series.get('id')}, novel: {novel_title}"
                         )
                         try:
                             self.download_novel(
@@ -341,7 +341,7 @@ class Pixiv(AppPixivAPI):
                             )
                         except Exception as e:
                             self.logger.error(
-                                f"Failed to download {series.get("id")}, novel no {no}: {e}"
+                                f"Failed to download {series.get('id')}, novel no {no}: {e}"
                             )
                             continue
 
@@ -351,7 +351,7 @@ class Pixiv(AppPixivAPI):
     def download_novel(
         self,
         novel: Novel,
-        root_path: str,
+        root_path: Path,
         novel_no: int | None = None,
         series: NovelSeries | None = None,
     ):
@@ -371,16 +371,17 @@ class Pixiv(AppPixivAPI):
         if series_id and series_title and novel_no and cover_url:
             title = f"{novel_no}. {title}"
             series_title = utils.normalize_name(series_title)
-            root_path = os.path.join(root_path, f"{series_title}_{str(series_id)}")
+            root_path = root_path.joinpath(f"{series_title}_{str(series_id)}")
             utils.check_folder_exists(root_path)
 
             utils.download_file(
-                os.path.join(root_path, f"{series_title}.jpg"),
+                root_path.joinpath(f"{series_title}.jpg"),
                 cover_url.replace("c/240x480_80", ""),
             )
 
         novel_text = self.novel_text(id).get("text")
 
-        with open(os.path.join(root_path, f"{title}.txt"), "w", encoding="utf-8") as f:
+        file_path = root_path.joinpath(f"{title}.txt")
+        with file_path.open("w", encoding="utf-8") as f:
             for line in novel_text.strip().split("\n"):
                 f.write(line.strip() + "\n")

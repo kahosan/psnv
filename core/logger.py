@@ -1,4 +1,3 @@
-import os
 from logging import (
     CRITICAL,
     DEBUG,
@@ -9,14 +8,16 @@ from logging import (
     FileHandler,
     Formatter,
     getLogger,
+)
+from logging import (
     Logger as LoggerAlias,
 )
+from pathlib import Path
 from time import localtime, strftime
-from typing import Optional
 
 from rich.logging import RichHandler
 
-DEFAULT_LOG_FOLDER = os.path.join(os.getcwd(), "logs")
+DEFAULT_LOG_FOLDER = Path(Path.cwd()).joinpath("logs")
 
 
 class Logger:
@@ -32,9 +33,9 @@ class Logger:
     def __init__(
         self,
         logger_level: str = "INFO",
-        logger_name: Optional[str] = "logger",
-        log_dir: Optional[str] = None,
-        log_filename: Optional[str] = None,
+        logger_name: str | None = "logger",
+        log_dir: str | None = None,
+        log_filename: str | None = None,
     ):
         self.logger: LoggerAlias
         self.level = self.NAME_TO_LEVEL.get(logger_level, "INFO")
@@ -45,7 +46,7 @@ class Logger:
 
     def _set_logger(self) -> None:
         try:
-            os.makedirs(self.log_dir)
+            Path(self.log_dir).mkdir()
         except (FileExistsError, OSError):
             pass
 
@@ -60,7 +61,7 @@ class Logger:
         )
 
         file_handler = FileHandler(
-            filename=os.path.join(self.log_dir, f"{self.log_filename}.log"),
+            filename=Path(self.log_dir).joinpath(f"{self.log_filename}.log"),
             mode="a",
             encoding="utf-8",
         )

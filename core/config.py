@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 from typing import TypedDict
 
 
@@ -23,5 +24,6 @@ class Config(TypedDict):
 
 
 def load_config() -> Config:
-    with open("config.json", "r") as f:
+    config_path = Path("config.json")
+    with config_path.open("r") as f:
         return json.load(f)

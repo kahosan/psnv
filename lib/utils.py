@@ -1,5 +1,5 @@
 import logging
-import os
+from pathlib import Path
 
 
 def normalize_name(name: str):
@@ -16,22 +16,23 @@ def normalize_name(name: str):
     )
 
 
-def check_folder_exists(path: str):
-    if not os.path.exists(path):
-        os.makedirs(path)
+def check_folder_exists(path: Path):
+    if not path.exists():
+        path.mkdir(parents=True)
 
 
-def check_user_name_is_change(current_name: str, user_id: int, root_path: str):
-    for folder in os.listdir(root_path):
-        if "_" in folder:
-            name, id = folder.split("_")
+def check_user_name_is_change(current_name: str, user_id: int, root_path: Path):
+    for folder in root_path.iterdir():
+        folder_name = folder.name
+        if "_" in folder_name:
+            name, id = folder_name.split("_")
             if id == user_id and name != current_name:
-                return (True, name)
-    return (False, None)
+                return True, name
+    return False, None
 
 
 def sync_user_name_folder(
-    current_name: str, user_id: int, root_path: str, logger: logging.Logger
+    current_name: str, user_id: int, root_path: Path, logger: logging.Logger
 ):
     (is_change, old_name) = check_user_name_is_change(current_name, user_id, root_path)
     if is_change is False:
@@ -40,16 +41,16 @@ def sync_user_name_folder(
     new_folder_name = f"{current_name}_{user_id}"
     old_folder_name = f"{old_name}_{user_id}"
     try:
-        os.rename(
-            os.path.join(root_path, old_folder_name),
-            os.path.join(root_path, new_folder_name),
+        Path.rename(
+            root_path.joinpath(old_folder_name),
+            root_path.joinpath(new_folder_name),
         )
         logger.info(f"Renamed folder: {old_folder_name} -> {new_folder_name}")
     except Exception as e:
         logger.error(f"Error while renaming folder: {e}")
 
 
-def download_file(path: str, url: str):
+def download_file(file_path: Path, url: str):
     import requests
 
     headers = {
@@ -59,6 +60,6 @@ def download_file(path: str, url: str):
 
     with requests.get(url, headers=headers, stream=True) as r:
         r.raise_for_status()
-        with open(path, "wb") as file:
+        with file_path.open("wb") as file:
             for chunk in r.iter_content(chunk_size=8192):
                 file.write(chunk)
