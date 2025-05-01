@@ -1,7 +1,7 @@
 from pathlib import Path
-from core.config import load_config
-from core.pixiv import UserIllust, Novel, NovelSeries, Pixiv
 
+from core.config import load_config
+from core.pixiv import Novel, NovelSeries, Pixiv, UserIllust
 
 config = load_config()
 p = Pixiv(refresh_token=config.get("refresh_token"))
@@ -19,7 +19,7 @@ if follow_config.get("enabled"):
 
     if type_config.get("illust"):
         illusts: list[UserIllust] = []
-        for follow in user_follows[:1]:
+        for follow in user_follows:
             illusts.append(
                 p.collect_illusts(follow.get("follow_id"), follow.get("follow_name"))
             )
