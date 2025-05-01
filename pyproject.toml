@@ -1,18 +1,12 @@
-[tool.poetry]
+[project]
 name = "psnv"
-version = "0.0.1"
+version = "0.1.0"
+authors = [{ name = "kahosan", email = "15116355657l@gmail.com" }]
 description = ""
-authors = ["kahosan <15116355657l@gmail.com>"]
-license = "MIT"
 readme = "README.md"
-package-mode = false
-
-[tool.poetry.dependencies]
-python = "^3.12"
-rich = "^13.7.1"
-pixivpy3 = "^3.7.5"
-
-
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+license = "MIT"
+requires-python = ">=3.13"
+dependencies = [
+    "pixivpy3>=3.7.5",
+    "rich>=14.0.0",
+]
