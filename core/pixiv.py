@@ -84,9 +84,7 @@ class Pixiv(AppPixivAPI):
             illusts = r.get("illusts")
 
             if illusts is None:
-                self.logger.error(
-                    f"Failed to collect illusts from user {user_id}, illusts is none"
-                )
+                self.logger.error(f"Failed to collect illusts from user {user_id}, illusts is none")
                 qs = self.parse_qs(next_url)
                 time.sleep(1)
                 continue
@@ -100,14 +98,10 @@ class Pixiv(AppPixivAPI):
                 }
 
                 if illust.get("meta_single_page"):
-                    _illust.get("image_urls").append(
-                        illust.get("meta_single_page").get("original_image_url")
-                    )
+                    _illust.get("image_urls").append(illust.get("meta_single_page").get("original_image_url"))
                 elif illust.get("meta_pages"):
                     for page in illust.get("meta_pages"):
-                        _illust.get("image_urls").append(
-                            page.get("image_urls").get("original")
-                        )
+                        _illust.get("image_urls").append(page.get("image_urls").get("original"))
 
                 illust_collect.append(_illust)
 
@@ -135,9 +129,7 @@ class Pixiv(AppPixivAPI):
                 self.logger,
             )
 
-            self.logger.info(
-                f"Start Processing illusts from {userIllust.get('user_name')}"
-            )
+            self.logger.info(f"Start Processing illusts from {userIllust.get('user_name')}")
 
             count = 0
             for illust in userIllust.get("illusts"):
@@ -153,9 +145,7 @@ class Pixiv(AppPixivAPI):
                     illust_user_id = illust.get("user_id")
 
                     try:
-                        self.logger.info(
-                            f"Processing illust {illust_id}_{illust_title}"
-                        )
+                        self.logger.info(f"Processing illust {illust_id}_{illust_title}")
                         self.download_illust(illust=illust, root_path=path)
                         c.execute(
                             "INSERT INTO illust (id, title, user_id) VALUES (?, ?, ?)",
@@ -202,9 +192,7 @@ class Pixiv(AppPixivAPI):
             novels = r.get("novels")
 
             if novels is None:
-                self.logger.error(
-                    f"Failed to collect novels from user {user_id}, novels is none"
-                )
+                self.logger.error(f"Failed to collect novels from user {user_id}, novels is none")
                 qs = self.parse_qs(next_url)
                 time.sleep(1)
                 continue
@@ -254,9 +242,7 @@ class Pixiv(AppPixivAPI):
                 if c.fetchone():
                     continue
 
-                self.logger.info(
-                    f"Processing novel {novel.get('id')}, {novel.get('title')}"
-                )
+                self.logger.info(f"Processing novel {novel.get('id')}, {novel.get('title')}")
                 novel_title = novel.get("title")
                 user_id = novel.get("user_id")
 
@@ -290,9 +276,7 @@ class Pixiv(AppPixivAPI):
                 novels = r.get("novels")
 
                 if novels is None:
-                    self.logger.error(
-                        f"Failed to process series {series}, novels is none"
-                    )
+                    self.logger.error(f"Failed to process series {series}, novels is none")
                     qs = self.parse_qs(next_url)
                     time.sleep(1)
                     continue
@@ -318,9 +302,7 @@ class Pixiv(AppPixivAPI):
                         if c.fetchone():
                             continue
 
-                        self.logger.info(
-                            f"Processing series {series.get('id')}, novel: {novel_title}"
-                        )
+                        self.logger.info(f"Processing series {series.get('id')}, novel: {novel_title}")
                         try:
                             self.download_novel(
                                 novel=_novel,
@@ -340,9 +322,7 @@ class Pixiv(AppPixivAPI):
                                 ),
                             )
                         except Exception as e:
-                            self.logger.error(
-                                f"Failed to download {series.get('id')}, novel no {no}: {e}"
-                            )
+                            self.logger.error(f"Failed to download {series.get('id')}, novel no {no}: {e}")
                             continue
 
                 qs = self.parse_qs(next_url)

@@ -10,3 +10,6 @@ dependencies = [
     "pixivpy3>=3.7.5",
     "rich>=14.0.0",
 ]
+
+[tool.ruff]
+line-length = 120

@@ -31,9 +31,7 @@ def check_user_name_is_change(current_name: str, user_id: int, root_path: Path):
     return False, None
 
 
-def sync_user_name_folder(
-    current_name: str, user_id: int, root_path: Path, logger: logging.Logger
-):
+def sync_user_name_folder(current_name: str, user_id: int, root_path: Path, logger: logging.Logger):
     (is_change, old_name) = check_user_name_is_change(current_name, user_id, root_path)
     if is_change is False:
         return

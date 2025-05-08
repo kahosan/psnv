@@ -56,9 +56,7 @@ class Logger:
         # If stream is not specified, sys.stderr is used.
         # If you need sys.stdout, pass it to StreamHandler constructor()
         # stream_handler = StreamHandler()
-        shell_handler = RichHandler(
-            rich_tracebacks=True, show_level=False, show_time=False, show_path=False
-        )
+        shell_handler = RichHandler(rich_tracebacks=True, show_level=False, show_time=False, show_path=False)
 
         file_handler = FileHandler(
             filename=Path(self.log_dir).joinpath(f"{self.log_filename}.log"),
@@ -73,12 +71,8 @@ class Logger:
 
         # LOG FORMAT
         # fmt_shell = "%(name)s %(message)s"
-        fmt_shell = (
-            "[%(asctime)s] %(levelname)s | %(filename)s:%(lineno)d:   %(message)s"
-        )
-        fmt_file = (
-            "[%(asctime)s] %(levelname)s | %(filename)s:%(lineno)d:   %(message)s"
-        )
+        fmt_shell = "[%(asctime)s] %(levelname)s | %(filename)s:%(lineno)d:   %(message)s"
+        fmt_file = "[%(asctime)s] %(levelname)s | %(filename)s:%(lineno)d:   %(message)s"
         datefmt = "%Y-%m-%d %H:%M:%S"
 
         # LOG FORMATTER

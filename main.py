@@ -20,9 +20,7 @@ if follow_config.get("enabled"):
     if type_config.get("illust"):
         illusts: list[UserIllust] = []
         for follow in user_follows:
-            illusts.append(
-                p.collect_illusts(follow.get("follow_id"), follow.get("follow_name"))
-            )
+            illusts.append(p.collect_illusts(follow.get("follow_id"), follow.get("follow_name")))
         p.process_illusts(UserIllusts=illusts, root_path=root_path)
 
     if type_config.get("novel"):
