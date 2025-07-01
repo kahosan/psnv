@@ -31,7 +31,7 @@ def check_user_name_is_change(current_name: str, user_id: int, root_path: Path):
     return False, None
 
 
-def sync_user_name_folder(current_name: str, user_id: int, root_path: Path, logger: logging.Logger):
+def sync_name(current_name: str, user_id: int, root_path: Path, logger: logging.Logger):
     (is_change, old_name) = check_user_name_is_change(current_name, user_id, root_path)
     if is_change is False:
         return
@@ -46,6 +46,10 @@ def sync_user_name_folder(current_name: str, user_id: int, root_path: Path, logg
         logger.info(f"Renamed folder: {old_folder_name} -> {new_folder_name}")
     except Exception as e:
         logger.error(f"Error while renaming folder: {e}")
+
+
+def create_folder_path(root_path: Path, user_id: int, user_name: str) -> Path:
+    return root_path.joinpath(f"{normalize_name(user_name)}_{user_id}")
 
 
 def download_file(file_path: Path, url: str):

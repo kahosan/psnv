@@ -27,7 +27,7 @@ if follow_config.get("enabled"):
         single_novels: list[Novel] = []
         novel_series: list[NovelSeries] = []
         for follow in user_follows:
-            _novels = p.collect_novels(follow.get("follow_id"))
+            _novels = p.collect_novels(follow.get("follow_id"), follow.get("follow_name"))
             single_novels.extend(_novels[0])
             novel_series.extend(_novels[1])
         p.process_novels_series(series_list=novel_series, root_path=root_path)

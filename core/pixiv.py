@@ -28,6 +28,7 @@ class Novel(TypedDict):
     id: int
     title: str
     user_id: int
+    user_name: str
 
 
 class NovelSeries(Novel):
@@ -118,11 +119,13 @@ class Pixiv(AppPixivAPI):
         root_path = root_path.joinpath("illusts")
 
         for userIllust in UserIllusts:
-            path = root_path.joinpath(
-                f"{utils.normalize_name(userIllust.get('user_name'))}_{str(userIllust.get('user_id'))}"
+            path = utils.create_folder_path(
+                root_path=root_path,
+                user_id=userIllust.get("user_id"),
+                user_name=userIllust.get("user_name"),
             )
             utils.check_folder_exists(path)
-            utils.sync_user_name_folder(
+            utils.sync_name(
                 userIllust.get("user_name"),
                 userIllust.get("user_id"),
                 root_path,
@@ -179,10 +182,10 @@ class Pixiv(AppPixivAPI):
 
             utils.download_file(file_path, url)
 
-    def collect_novels(self, user_id: int | str):
+    def collect_novels(self, user_id: int | str, user_name: str):
         collect: tuple[list[Novel], list[NovelSeries]] = ([], [])
 
-        self.logger.info(f"Collecting novels from user {user_id}")
+        self.logger.info(f"Collecting novels from user {user_name}_{user_id}")
 
         series_set = set()
         qs: Qs = {"user_id": user_id}
@@ -209,6 +212,7 @@ class Pixiv(AppPixivAPI):
                             "id": series_id,
                             "title": novel.get("series").get("title"),
                             "user_id": novel.get("user").get("id"),
+                            "user_name": novel.get("user").get("name"),
                             "cover_url": novel.get("image_urls").get("large"),
                         }
                     )
@@ -218,6 +222,7 @@ class Pixiv(AppPixivAPI):
                             "id": novel.get("id"),
                             "title": novel.get("title"),
                             "user_id": novel.get("user").get("id"),
+                            "user_name": novel.get("user").get("name"),
                         }
                     )
 
@@ -231,8 +236,18 @@ class Pixiv(AppPixivAPI):
         root_path = root_path.joinpath("novels")
 
         for novel in novels:
-            path = root_path.joinpath(str(novel.get("user_id")))
+            path = utils.create_folder_path(
+                root_path=root_path,
+                user_id=novel.get("user_id"),
+                user_name=novel.get("user_name"),
+            )
             utils.check_folder_exists(path)
+            utils.sync_name(
+                novel.get("user_name"),
+                novel.get("user_id"),
+                root_path,
+                self.logger,
+            )
 
             novel_id = novel.get("id")
 
@@ -264,8 +279,18 @@ class Pixiv(AppPixivAPI):
         root_path = root_path.joinpath("novels")
 
         for series in series_list:
-            path = Path(root_path).joinpath(str(series.get("user_id")))
+            path = utils.create_folder_path(
+                root_path=root_path,
+                user_id=series.get("user_id"),
+                user_name=series.get("user_name"),
+            )
             utils.check_folder_exists(path)
+            utils.sync_name(
+                series.get("user_name"),
+                series.get("user_id"),
+                root_path,
+                self.logger,
+            )
 
             qs: Qs = {"series_id": series.get("id")}
             no = 0
@@ -294,6 +319,7 @@ class Pixiv(AppPixivAPI):
                         "id": novel_id,
                         "title": novel_title,
                         "user_id": series.get("user_id"),
+                        "user_name": series.get("user_name"),
                     }
 
                     with SQLiteDB() as db:
@@ -353,6 +379,12 @@ class Pixiv(AppPixivAPI):
             series_title = utils.normalize_name(series_title)
             root_path = root_path.joinpath(f"{series_title}_{str(series_id)}")
             utils.check_folder_exists(root_path)
+            utils.sync_name(
+                series_title,
+                series_id,
+                root_path,
+                self.logger,
+            )
 
             utils.download_file(
                 root_path.joinpath(f"{series_title}.jpg"),
