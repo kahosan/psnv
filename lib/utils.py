@@ -48,8 +48,15 @@ def sync_name(current_name: str, user_id: int, root_path: Path, logger: logging.
         logger.error(f"Error while renaming folder: {e}")
 
 
-def create_folder_path(root_path: Path, user_id: int, user_name: str) -> Path:
-    return root_path.joinpath(f"{normalize_name(user_name)}_{user_id}")
+def create_folder_path(root_path: Path, id: int, name: str, logger: logging.Logger) -> Path:
+    name = normalize_name(name)
+
+    sync_name(name, id, root_path, logger)
+
+    path = root_path.joinpath(f"{name}_{id}")
+    check_folder_exists(path)
+
+    return path
 
 
 def download_file(file_path: Path, url: str):

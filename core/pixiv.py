@@ -121,15 +121,9 @@ class Pixiv(AppPixivAPI):
         for userIllust in UserIllusts:
             path = utils.create_folder_path(
                 root_path=root_path,
-                user_id=userIllust.get("user_id"),
-                user_name=userIllust.get("user_name"),
-            )
-            utils.check_folder_exists(path)
-            utils.sync_name(
-                userIllust.get("user_name"),
-                userIllust.get("user_id"),
-                root_path,
-                self.logger,
+                id=userIllust.get("user_id"),
+                name=userIllust.get("user_name"),
+                logger=self.logger,
             )
 
             self.logger.info(f"Start Processing illusts from {userIllust.get('user_name')}")
@@ -171,8 +165,7 @@ class Pixiv(AppPixivAPI):
         urls = illust.get("image_urls")
 
         if len(urls) > 1:
-            root_path = root_path.joinpath(f"{title}_{str(id)}")
-            utils.check_folder_exists(root_path)
+            root_path = utils.create_folder_path(root_path=root_path, id=id, name=title, logger=self.logger)
 
         for url in urls:
             file_name = f"{title}_{url.split('/').pop()}"
@@ -237,16 +230,7 @@ class Pixiv(AppPixivAPI):
 
         for novel in novels:
             path = utils.create_folder_path(
-                root_path=root_path,
-                user_id=novel.get("user_id"),
-                user_name=novel.get("user_name"),
-            )
-            utils.check_folder_exists(path)
-            utils.sync_name(
-                novel.get("user_name"),
-                novel.get("user_id"),
-                root_path,
-                self.logger,
+                root_path=root_path, id=novel.get("user_id"), name=novel.get("user_name"), logger=self.logger
             )
 
             novel_id = novel.get("id")
@@ -280,16 +264,7 @@ class Pixiv(AppPixivAPI):
 
         for series in series_list:
             path = utils.create_folder_path(
-                root_path=root_path,
-                user_id=series.get("user_id"),
-                user_name=series.get("user_name"),
-            )
-            utils.check_folder_exists(path)
-            utils.sync_name(
-                series.get("user_name"),
-                series.get("user_id"),
-                root_path,
-                self.logger,
+                root_path=root_path, id=series.get("user_id"), name=series.get("user_name"), logger=self.logger
             )
 
             qs: Qs = {"series_id": series.get("id")}
@@ -377,13 +352,11 @@ class Pixiv(AppPixivAPI):
         if series_id and series_title and novel_no and cover_url:
             title = f"{novel_no}. {title}"
             series_title = utils.normalize_name(series_title)
-            root_path = root_path.joinpath(f"{series_title}_{str(series_id)}")
-            utils.check_folder_exists(root_path)
-            utils.sync_name(
-                series_title,
-                series_id,
-                root_path,
-                self.logger,
+            utils.create_folder_path(
+                root_path=root_path,
+                id=series_id,
+                name=series_title,
+                logger=self.logger,
             )
 
             utils.download_file(
