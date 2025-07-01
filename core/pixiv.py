@@ -361,8 +361,16 @@ class Pixiv(AppPixivAPI):
 
         novel_text = self.novel_text(id).get("text")
 
-        if len(title) > 250:
-            title = title[:250]
+        max_bytes = 250
+        encoded = title.encode("utf-8")
+        if len(encoded) > max_bytes:
+            cut = encoded[:max_bytes]
+            while True:
+                try:
+                    title = cut.decode("utf-8")
+                    break
+                except UnicodeDecodeError:
+                    cut = cut[:-1]
 
         file_path = root_path.joinpath(f"{title}.txt")
         with file_path.open("w", encoding="utf-8") as f:
