@@ -361,6 +361,9 @@ class Pixiv(AppPixivAPI):
 
         novel_text = self.novel_text(id).get("text")
 
+        if len(title) > 250:
+            title = title[:250]
+
         file_path = root_path.joinpath(f"{title}.txt")
         with file_path.open("w", encoding="utf-8") as f:
             for line in novel_text.strip().split("\n"):
