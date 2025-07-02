@@ -1,4 +1,6 @@
 import logging
+import os
+from datetime import datetime
 from pathlib import Path
 
 
@@ -57,6 +59,11 @@ def create_folder_path(root_path: Path, id: int, name: str, logger: logging.Logg
     check_folder_exists(path)
 
     return path
+
+
+def fix_img_datetime(file_path: Path, date: str):
+    ts = datetime.strptime(date, "%Y-%m-%dT%H:%M:%S%z").timestamp()
+    os.utime(file_path, (ts, ts))
 
 
 def download_file(file_path: Path, url: str):

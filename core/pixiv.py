@@ -14,6 +14,7 @@ type Qs = dict[str, Any] | None
 class Illust(TypedDict):
     id: int
     title: str
+    create_date: str
     image_urls: list[str]
     user_id: int
 
@@ -95,6 +96,7 @@ class Pixiv(AppPixivAPI):
                     "id": illust.get("id"),
                     "title": illust.get("title"),
                     "user_id": illust.get("user").get("id"),
+                    "create_date": illust.get("create_date"),
                     "image_urls": [],
                 }
 
@@ -174,6 +176,7 @@ class Pixiv(AppPixivAPI):
                 continue
 
             utils.download_file(file_path, url)
+            utils.fix_img_datetime(file_path, illust.get("create_date"))
 
     def collect_novels(self, user_id: int | str, user_name: str):
         collect: tuple[list[Novel], list[NovelSeries]] = ([], [])
